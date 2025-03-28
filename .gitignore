@@ -1,0 +1,6 @@
+# Ignoriere Visual Studio-Konfigurationsdateien und -Verzeichnisse
+.vs/
+*.user
+*.userosscache
+*.suo
+*.sln.docstates

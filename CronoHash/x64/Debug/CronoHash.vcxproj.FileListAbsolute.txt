@@ -1,0 +1,2 @@
+E:\Users\final\source\repos\CronoHash\x64\Debug\gmock.dll
+E:\Users\final\source\repos\CronoHash\CronoHash\x64\Debug\CronoHash.vcxproj.Up2Date
