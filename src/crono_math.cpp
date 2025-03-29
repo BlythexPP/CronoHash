@@ -73,12 +73,16 @@ namespace CronoMath {
 
 
     uint64_t mod_prime256(uint64_t input, int index) {
-        static const uint64_t EXTRA_PRIMES[4] = {
+        static const uint64_t extra_primes[8] = {
             0xCbbb9d5dc1059ed8ULL, 0x629a292a367cd507ULL,
-            0x9159015a3070dd17ULL, 0x152fecd8f70e5939ULL
+            0x9159015a3070dd17ULL, 0x152fecd8f70e5939ULL,
+            0x7F4A7C15E0F1A7B3ULL, 0xABCD12345678EF99ULL,
+            0x99FF00AA11335577ULL, 0xCAFEBABEDEADCAFEULL
         };
-        return input % EXTRA_PRIMES[index];
+        uint64_t rotated = CronoUtils::rotate_left(input, (index * 11) % 64);
+        return rotated % extra_primes[index % 8];
     }
+
 
     static const uint64_t SECP_CONSTANT = 0xD1B54A32D192ED03ULL;
 
@@ -92,6 +96,12 @@ namespace CronoMath {
     }
 
     uint64_t hash_const_mix(uint64_t input) {
-        return input ^ 0xA5A5A5A5A5A5A5A5ULL ^ 0xDEADBEEF1337BEEFULL;
+        const uint64_t salt1 = 0xA5A5A5A5A5A5A5A5ULL;
+        const uint64_t salt2 = 0xDEADBEEF1337BEEFULL;
+        const uint64_t salt3 = 0xC0FFEE1234567890ULL;
+        const uint64_t rot = CronoUtils::rotate_left(input ^ salt1, 17);
+        const uint64_t mix = (rot ^ salt2) * salt3;
+        return mix ^ (mix >> 31);
     }
+
 } // namespace CronoMath
