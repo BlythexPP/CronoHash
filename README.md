@@ -2,6 +2,12 @@
 
 Welcome to **CronoHash v1.0** – an innovative, time-sensitive, and quantum-secure hashing algorithm that redefines the way data is secured. This project combines traditional cryptographic methods with cutting-edge quantum-safe technologies, ensuring your data is protected today and in the future.
 
+
+
+![Demo](demo.gif)
+
+
+
 ---
 
 ## Table of Contents
