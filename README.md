@@ -6,6 +6,7 @@ Welcome to **CronoHash v1.0** – an innovative, time-sensitive, and quantum-sec
 
 ## Table of Contents
 - [Introduction](#introduction)
+- [Whitepaper](./WHITEPAPER.md)
 - [Features](#features)
 - [Architecture](#architecture)
 - [Installation](#installation)
