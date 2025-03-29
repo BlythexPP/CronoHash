@@ -116,15 +116,17 @@ The project is organized into clear, modular components:
 Run the executable with the following command-line options:
 
 ```bash
-CronoHash [-i input_string] [-d binding_duration_ms] [-m mode] [-b bit_strength]
+CronoHash [-i input_string] [-d binding_duration_ms] [-m mode] [-b bit_strength] [-n count]
 ```
 
 - **-i:** Input string to hash (default: "CronoHash Prime Core v1")
 - **-d:** Time binding duration in milliseconds (default: 0 for no binding)
 - **-m:** Mode selection (FAST, BALANCED, SECURE, ENTROPIC; default: BALANCED)
 - **-b:** Bit strength (allowed values: 128, 256, 512, 1024, 2048; default: 256)
+- **-n:** Number of hashes to generate (default: 1)
 
 If no parameters are provided, the program will prompt you for the necessary inputs interactively.
+
 
 ---
 
