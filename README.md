@@ -41,7 +41,7 @@ For a detailed technical overview, please refer to the [Whitepaper](./WHITEPAPER
   Combines dynamic time sources (e.g., TSC, Nanotime, Steady Clock) with system fingerprints (e.g., RAM, Cache, CPU ID) to generate unique, environment-bound hashes.
 
 - **Quantum-Secure 🔒**  
-  Utilizes SHAKE128 and Kyber512 (via the Open Quantum Safe library) to ensure robust security against both classical and quantum attacks.
+  Utilizes SHAKE256 and Kyber512 (via the Open Quantum Safe library) to ensure robust security against both classical and quantum attacks.
 
 - **Flexible Bit Strength 🎛️**  
   Generate hashes in various sizes (128, 256, 512, 1024, 2048 bits) to suit your security needs.
