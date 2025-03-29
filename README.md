@@ -81,3 +81,52 @@ The project is organized into clear, modular components:
    ```bash
    git clone https://github.com/BlythexPP/CronoHash.git
    cd CronoHash
+
+
+Build with CMake:
+
+    mkdir build
+    cd build
+    cmake ..
+    cmake --build .
+
+    Or open the solution file (CronoHash.sln) in Visual Studio and build the project.
+
+## Usage 🚀
+
+Run the executable with the following command-line options:
+
+CronoHash [-i input_string] [-d binding_duration_ms] [-m mode] [-b bit_strength]
+
+    -i: Input string to hash (default: "CronoHash Prime Core v1")
+
+    -d: Time binding duration in milliseconds (default: 0 for no binding)
+
+    -m: Mode selection (FAST, BALANCED, SECURE, ENTROPIC; default: BALANCED)
+
+    -b: Bit strength (allowed values: 128, 256, 512, 1024, 2048; default: 256)
+
+If no parameters are provided, the program will prompt you for the necessary inputs interactively.
+
+## Tests 🧪
+
+The project includes a comprehensive suite of unit tests (using Google Test) that ensure:
+
+    Deterministic outputs without time binding.
+
+    Variability in hash outputs when time binding is enabled.
+
+    Correct hash lengths and metadata for various bit strengths and modes.
+
+To run the tests, build the project in test mode and execute the test binary.
+## License 📄
+
+This project is licensed under the MIT License. See the LICENSE.txt file for details.
+
+## Contact 📧
+
+Developed by Blythex
+GitHub: https://github.com/BlythexPP
+
+Feel free to explore, contribute, and share your feedback. Happy hashing! 🔐🚀
+
