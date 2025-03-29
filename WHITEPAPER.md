@@ -87,7 +87,7 @@ The **Ghost Salt** is integrated as a standard mixing step in CronoHash. Applied
 ## Quantum Security
 
 To safeguard against future quantum threats, CronoHash integrates advanced post-quantum cryptographic primitives:
-- **SHAKE128:** Provides flexible and adaptable entropy.
+- **SHAKE256:** Provides flexible and adaptable entropy.
 - **Kyber512:** Implements quantum-resistant key encapsulation.
 
 Together, these components ensure that CronoHash remains secure even in a future where quantum computers are prevalent.
