@@ -87,7 +87,7 @@ The project is organized into clear, modular components:
 ## Installation
 
 ### Prerequisites
-- **C++17** compatible compiler (Visual Studio, GCC, Clang, etc.)
+- **C++20** compatible compiler (Visual Studio, GCC, Clang, etc.)
 - **liboqs** (Open Quantum Safe library)
 - **CMake** or Visual Studio for building the project
 
