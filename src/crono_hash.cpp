@@ -4,7 +4,8 @@
 #include "../include/crono_quantum.h"
 #include <sstream>
 #include <iomanip>
-#include <vector>    // <-- Hinzugefügt!
+#include <vector>
+#include <chrono>  // Für alternative Zeitquellen
 
 static std::string modeToString(CronoHash::CronoMode mode) {
     using CronoMode = CronoHash::CronoMode;
@@ -20,21 +21,33 @@ static std::string modeToString(CronoHash::CronoMode mode) {
 namespace CronoHash {
 
     std::string hash(const char* data, std::size_t length, double binding_duration_ms, CronoMode mode, unsigned int bit_strength) {
-        // Anzahl der 64-Bit-Worte, die wir benötigen:
+        // Berechne die Anzahl der 64-Bit-Worte, die benötigt werden:
         unsigned int num_words = bit_strength / 64;
-        if (num_words == 0) num_words = 1; // Absicherung
+        if (num_words == 0)
+            num_words = 1; // Sicherheitshalber
 
-        // Array zur Speicherung – hier nutzen wir einen Vektor
+        // Array zur Speicherung – hier verwenden wir einen Vektor
         std::vector<uint64_t> words(num_words);
 
-        // Für jeden Block einen anderen Startwert, z.B. indem wir tsc plus den Index einbeziehen
+        // Zeit- und Entropiequellen:
         uint64_t tsc = CronoUtils::get_tsc();
+#ifdef _WIN32
+        // Unter Windows: Nutze die implementierte Funktion
         uint64_t nano = CronoUtils::get_current_nanotime();
+#else
+        // Unter Linux (Debian/Ubuntu): Verwende system_clock für die reale Systemzeit
+        uint64_t nano = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+#endif
+        // Steady Clock bleibt plattformunabhängig (monotonic)
         uint64_t steady = CronoUtils::get_steady_time();
+
+        // Erzeuge Umgebungsentropie
         uint64_t ram = CronoUtils::ram_fingerprint();
         uint64_t cache = CronoUtils::cache_noise();
 
-        // Initialisierung der Worte – analog zur ersten Runde im Originalcode
+        // Initialisierungsrunde: Jeder 64-Bit Block erhält einen Startwert,
+        // der aus den Zeit- und Entropiequellen sowie einer Primzahl abgeleitet wird.
         for (unsigned int i = 0; i < num_words; i++) {
             words[i] = tsc ^ (nano << ((i % 8) + 1)) ^ steady ^ ram ^ cache ^ CronoMath::PRIMES[i % CronoMath::NUM_PRIMES];
             words[i] = CronoUtils::mix_entropy(words[i], data, length);
@@ -43,7 +56,7 @@ namespace CronoHash {
             words[i] = CronoMath::mod_prime(words[i]);
         }
 
-        // Zweite Mischrunde
+        // Zweite Mischrunde: Weitere Transformationen unter Einbeziehung von 'nano'
         for (unsigned int i = 0; i < num_words; i++) {
             words[i] = CronoMath::endomorph_transform(words[i], nano);
             words[i] = CronoUtils::mix_entropy(words[i], data, length);
@@ -51,7 +64,7 @@ namespace CronoHash {
             words[i] = CronoMath::mod_prime256(words[i], i % 4);
         }
 
-        // Weitere Runden für SECURE/ENTROPIC
+        // Zusätzliche Runden für SECURE/ENTROPIC-Modus
         if (mode == CronoMode::SECURE || mode == CronoMode::ENTROPIC) {
             for (unsigned int i = 0; i < num_words; i++) {
                 words[i] = CronoMath::endomorph_transform(words[i], steady);
@@ -59,7 +72,7 @@ namespace CronoHash {
             }
         }
 
-        // ENTROPIC-Modus: zusätzlicher Memory Walk
+        // Im ENTROPIC-Modus: Zusätzlicher Memory Walk
         if (mode == CronoMode::ENTROPIC) {
             uint64_t mem_walk = CronoUtils::memory_walk();
             for (unsigned int i = 0; i < num_words; i++) {
@@ -67,7 +80,7 @@ namespace CronoHash {
             }
         }
 
-        // Adaptive Temp Binding
+        // Adaptive Zeitbindung (Temp Binding)
         if (binding_duration_ms > 0.0) {
             uint64_t binding_factor = CronoUtils::adaptive_binding_factor(binding_duration_ms);
             for (unsigned int i = 0; i < num_words; i++) {
@@ -75,25 +88,25 @@ namespace CronoHash {
             }
         }
 
-        // GhostSalt-Runde
+        // GhostSalt-Runde zur weiteren Vermischung
         uint64_t gs = CronoUtils::ghost_salt();
         for (unsigned int i = 0; i < num_words; i++) {
             words[i] ^= gs;
         }
 
-        // QUANTUM ROUND – erste Stufe via SHAKE128
+        // Quantum Runden:
+        // Erste Runde via SHAKE128
         for (unsigned int i = 0; i < num_words; i++) {
             uint64_t qm = CronoQuantum::quantum_mix(words[i], data, length);
             words[i] ^= qm;
         }
-
-        // QUANTUM ROUND – zweite Stufe via Kyber512
+        // Zweite Runde via Kyber512
         for (unsigned int i = 0; i < num_words; i++) {
             uint64_t qm2 = CronoQuantum::quantum_mix_kyber(words[i], data, length);
             words[i] ^= qm2;
         }
 
-        // Ausgabe als Hexadezimalstring – jeder 64-Bit Block wird zu 16 Hex-Zeichen
+        // Ausgabe: Jeder 64-Bit Block wird als 16 Hexadezimalzeichen dargestellt
         std::ostringstream out;
         for (unsigned int i = 0; i < num_words; i++) {
             out << std::hex << std::setw(16) << std::setfill('0') << words[i];
@@ -103,7 +116,12 @@ namespace CronoHash {
 
     std::string hash_with_metadata(const char* data, std::size_t length, double binding_duration_ms, CronoMode mode, unsigned int bit_strength) {
         uint64_t tsc = CronoUtils::get_tsc();
+#ifdef _WIN32
         uint64_t nano = CronoUtils::get_current_nanotime();
+#else
+        uint64_t nano = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+#endif
         uint64_t binding_factor = 0;
         if (binding_duration_ms > 0.0) {
             binding_factor = CronoUtils::adaptive_binding_factor(binding_duration_ms);

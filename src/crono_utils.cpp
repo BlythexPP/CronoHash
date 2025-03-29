@@ -18,11 +18,16 @@
 #include <comdef.h>
 #include <Wbemidl.h>
 #pragma comment(lib, "wbemuuid.lib")
+#else
+#include <x86intrin.h>  // Für __rdtsc() auf Linux/Unix
+#include <fstream>
+#include <sstream>
+#include <string>
 #endif
 
 namespace CronoUtils {
 
-    // --- Bestehende Funktionen (unverändert) ---
+    // --- Allgemeine Funktionen (plattformübergreifend) ---
 
     uint64_t get_current_nanotime() {
         auto now = std::chrono::high_resolution_clock::now();
@@ -139,7 +144,6 @@ namespace CronoUtils {
 
 #ifdef _WIN32
     // --- Windows-spezifische Hardware-Fingerprinting-Funktionen ---
-
     uint64_t get_cpu_id() {
         int cpuInfo[4] = { 0 };
         __cpuid(cpuInfo, 0);
@@ -151,16 +155,13 @@ namespace CronoUtils {
         if (FAILED(hr)) {
             return 0;
         }
-
         hr = CoInitializeSecurity(NULL, -1, NULL, NULL,
             RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
             NULL, EOAC_NONE, NULL);
-
         if (FAILED(hr)) {
             CoUninitialize();
             return 0;
         }
-
         IWbemLocator* pLoc = NULL;
         hr = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
             IID_IWbemLocator, reinterpret_cast<LPVOID*>(&pLoc));
@@ -168,7 +169,6 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         IWbemServices* pSvc = NULL;
         hr = pLoc->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
         if (FAILED(hr)) {
@@ -176,7 +176,6 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         hr = CoSetProxyBlanket(pSvc, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL,
             RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
         if (FAILED(hr)) {
@@ -185,27 +184,25 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         IEnumWbemClassObject* pEnumerator = NULL;
         hr = pSvc->ExecQuery(bstr_t("WQL"),
             bstr_t("SELECT ManufacturerID, ManufacturerVersion FROM Win32_Tpm"),
             WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
             NULL, &pEnumerator);
-
         uint64_t tpmFP = 0;
         if (SUCCEEDED(hr) && pEnumerator) {
             IWbemClassObject* pclsObj = NULL;
             ULONG uReturn = 0;
             if (pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn) == S_OK && uReturn != 0) {
                 VARIANT vtProp;
+                VariantInit(&vtProp); // Initialisierung hinzufügen
                 hr = pclsObj->Get(L"ManufacturerID", 0, &vtProp, 0, 0);
-                if (SUCCEEDED(hr)) {
-                    if (vtProp.vt == VT_UI4) {
-                        tpmFP ^= vtProp.uintVal;
-                    }
+                if (SUCCEEDED(hr) && vtProp.vt == VT_UI4) {
+                    tpmFP ^= vtProp.uintVal;
                 }
                 VariantClear(&vtProp);
 
+                VariantInit(&vtProp); // Vor erneuter Verwendung erneut initialisieren
                 hr = pclsObj->Get(L"ManufacturerVersion", 0, &vtProp, 0, 0);
                 if (SUCCEEDED(hr) && (vtProp.vt & VT_ARRAY)) {
                     SAFEARRAY* psa = vtProp.parray;
@@ -223,7 +220,6 @@ namespace CronoUtils {
             }
             pEnumerator->Release();
         }
-
         pSvc->Release();
         pLoc->Release();
         CoUninitialize();
@@ -234,7 +230,7 @@ namespace CronoUtils {
         ULONGLONG uptime = GetTickCount64(); // in Millisekunden
         FILETIME ft;
         GetSystemTimeAsFileTime(&ft);
-        ULARGE_INTEGER currentTime;
+        ULARGE_INTEGER currentTime = { 0 }; // Mit Nullen initialisieren
         currentTime.LowPart = ft.dwLowDateTime;
         currentTime.HighPart = ft.dwHighDateTime;
         uint64_t currentTimeNS = currentTime.QuadPart * 100; // FILETIME in 100-ns-Einheiten -> ns
@@ -247,16 +243,13 @@ namespace CronoUtils {
         if (FAILED(hr)) {
             return 0;
         }
-
         hr = CoInitializeSecurity(NULL, -1, NULL, NULL,
             RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
             NULL, EOAC_NONE, NULL);
-
         if (FAILED(hr)) {
             CoUninitialize();
             return 0;
         }
-
         IWbemLocator* pLoc = NULL;
         hr = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
             IID_IWbemLocator, reinterpret_cast<LPVOID*>(&pLoc));
@@ -264,7 +257,6 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         IWbemServices* pSvc = NULL;
         hr = pLoc->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
         if (FAILED(hr)) {
@@ -272,7 +264,6 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         hr = CoSetProxyBlanket(pSvc, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL,
             RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
         if (FAILED(hr)) {
@@ -281,20 +272,17 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         IEnumWbemClassObject* pEnumerator = NULL;
         hr = pSvc->ExecQuery(bstr_t("WQL"),
             bstr_t("SELECT SerialNumber FROM Win32_BIOS"),
             WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
             NULL, &pEnumerator);
-
         uint64_t biosFP = 0;
         IWbemClassObject* pclsObj = NULL;
         ULONG uReturn = 0;
         if (pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn) == S_OK && uReturn != 0) {
             VARIANT vtProp;
-            VariantInit(&vtProp);  // Initialisiere die VARIANT vor der Verwendung
-
+            VariantInit(&vtProp);  // Initialisiere die VARIANT
             hr = pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0);
             if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
                 unsigned long hash = 5381;
@@ -305,27 +293,23 @@ namespace CronoUtils {
                 }
                 biosFP = hash;
             }
-
-            VariantClear(&vtProp);  // Bereinige die VARIANT
+            VariantClear(&vtProp);
             pclsObj->Release();
         }
-
         pEnumerator->Release();
         pSvc->Release();
         pLoc->Release();
         CoUninitialize();
-
         return biosFP;
     }
 
-    // Verkettet alle Hardware-Fingerprints (ohne MAC) und mischt sie in 5 Runden mittels endomorph_transform
     std::string generate_system_chain_id() {
+        // Windows-Version: Nutzt die oben definierten Funktionen
         uint64_t cpuID = get_cpu_id();
         uint64_t tpmFP = tpm_fingerprint();
         uint64_t bootTime = os_boot_time();
         uint64_t bios = bios_serial();
         uint64_t ramFP = ram_fingerprint();
-
         uint64_t chain = cpuID ^ tpmFP ^ bootTime ^ bios ^ ramFP;
         for (int i = 0; i < 5; i++) {
             chain = CronoMath::endomorph_transform(chain, get_tsc() ^ chain);
@@ -335,6 +319,62 @@ namespace CronoUtils {
         return oss.str();
     }
 
-#endif  // _WIN32
+#else
+    // --- Linux-spezifische Hardware-Fingerprinting-Funktionen ---
+    // Diese Implementierungen basieren auf dem Lesen von Systemdateien.
+    uint64_t get_cpu_id() {
+        std::ifstream cpuinfo("/proc/cpuinfo");
+        std::string line;
+        uint64_t id = 0;
+        while (std::getline(cpuinfo, line)) {
+            if (line.find("Serial") != std::string::npos ||
+                line.find("model name") != std::string::npos) {
+                std::hash<std::string> hash_fn;
+                id ^= hash_fn(line);
+            }
+        }
+        return id;
+    }
+
+    uint64_t os_boot_time() {
+        std::ifstream uptime_file("/proc/uptime");
+        std::string uptime_str;
+        if (std::getline(uptime_file, uptime_str)) {
+            std::istringstream iss(uptime_str);
+            double uptime;
+            iss >> uptime;
+            // Hier wird die System-Uptime (in Sekunden) zurückgegeben.
+            // Alternativ könnte man /proc/stat oder systemd-analyze nutzen.
+            return static_cast<uint64_t>(uptime * 1e9);
+        }
+        return 0;
+    }
+
+    uint64_t bios_serial() {
+        // Versuch, die BIOS-Seriennummer aus DMI-Daten zu lesen
+        std::ifstream bios_file("/sys/class/dmi/id/product_uuid");
+        std::string bios;
+        if (std::getline(bios_file, bios)) {
+            std::hash<std::string> hash_fn;
+            return hash_fn(bios);
+        }
+        return 0;
+    }
+
+    std::string generate_system_chain_id() {
+        // Linux-Version: Nutzt alternative Methoden für Hardware-Fingerprinting
+        uint64_t cpuID = get_cpu_id();
+        uint64_t bootTime = os_boot_time();
+        uint64_t bios = bios_serial();
+        uint64_t ramFP = ram_fingerprint();
+        uint64_t chain = cpuID ^ bootTime ^ bios ^ ramFP;
+        for (int i = 0; i < 5; i++) {
+            chain = CronoMath::endomorph_transform(chain, get_tsc() ^ chain);
+        }
+        std::ostringstream oss;
+        oss << std::hex << std::setw(16) << std::setfill('0') << chain;
+        return oss.str();
+    }
+#endif
 
 } // namespace CronoUtils

@@ -1,6 +1,8 @@
 # Ordnerstruktur
 
 CronoHash
+├── .gitignore
+├── CMakeLists.txt
 ├── CodeOfFolder.txt
 ├── CronoHash.cpp
 ├── CronoHash.sln
@@ -8,14 +10,18 @@ CronoHash
 ├── CronoHash.vcxproj.filters
 ├── CronoHash.vcxproj.user
 ├── FileScanner.py
+├── LICENSE.txt
+├── Microsoft Word-Dokument (neu).docx
+├── README.md
 ├── .vs
+│   ├── cmake.db
 │   ├── CronoHash
 │   │   ├── FileContentIndex
-│   │   │   ├── 67512652-fac1-41d7-a9f0-6577243b5e1f.vsidx
-│   │   │   ├── 8d660a28-934b-4402-879a-5a3c11ee94d5.vsidx
-│   │   │   ├── 93bfefe8-0594-4ab4-9ab4-12e96de9b45e.vsidx
+│   │   │   ├── 06b43d72-c157-4985-9468-763eeea28784.vsidx
+│   │   │   ├── c83fb783-fa17-4588-86d9-d1d14de6e635.vsidx
+│   │   │   ├── dd073d43-4dde-4650-93c8-01f5433beb6c.vsidx
+│   │   │   ├── e50c10b3-4d67-4043-ba61-8c332783746e.vsidx
 │   │   │   ├── f6362401-313c-48c8-93f9-22d4a6f9a71e.vsidx
-│   │   │   ├── fc6cf78e-02f0-44a9-a05f-f21323a497d3.vsidx
 │   │   ├── v17
 │   │   │   ├── .suo
 │   │   │   ├── Browse.VC.db
@@ -24,6 +30,7 @@ CronoHash
 │   │   │   ├── Browse.VC.opendb
 │   │   │   ├── DocumentLayout.backup.json
 │   │   │   ├── DocumentLayout.json
+│   │   │   ├── Solution.VC.db
 │   │   │   ├── ipch
 │   │   │   │   ├── AutoPCH
 │   │   │   │   │   ├── 241fb7b6eebff151
@@ -32,6 +39,8 @@ CronoHash
 │   │   │   │   │   │   ├── CRONO_UTILS.ipch
 │   │   │   │   │   ├── 34dee2cf2c10513f
 │   │   │   │   │   │   ├── CRONO_QUANTUM.ipch
+│   │   │   │   │   ├── 4802a7c075467968
+│   │   │   │   │   │   ├── VCTMP37612_335705.CRONO_UTILS.00000000.ipch
 │   │   │   │   │   ├── 6c29116d7f36fe9
 │   │   │   │   │   │   ├── CRONO_MATH.ipch
 │   │   │   │   │   ├── 87a9b36ea7308c00
@@ -61,6 +70,9 @@ CronoHash
 │   ├── CronoHashTests.cpp
 
 # Inhalte der Code-Dateien
+
+# CMakeLists.txt - E:\Users\final\source\repos\CronoHash\CMakeLists.txt
+# Fehler beim Lesen der Datei: 'utf-8' codec can't decode byte 0xdc in position 214: invalid continuation byte
 
 # CodeOfFolder.txt - E:\Users\final\source\repos\CronoHash\CodeOfFolder.txt
 
@@ -322,6 +334,30 @@ int main(int argc, char* argv[]) {
 
 
 
+# LICENSE.txt - E:\Users\final\source\repos\CronoHash\LICENSE.txt
+MIT License
+
+Copyright (c) [year] [fullname]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
 # crono_hash.h - E:\Users\final\source\repos\CronoHash\include\crono_hash.h
 #pragma once
 #include <string>
@@ -391,7 +427,8 @@ namespace CronoQuantum {
 #include "../include/crono_quantum.h"
 #include <sstream>
 #include <iomanip>
-#include <vector>    // <-- Hinzugefügt!
+#include <vector>
+#include <chrono>  // Für alternative Zeitquellen
 
 static std::string modeToString(CronoHash::CronoMode mode) {
     using CronoMode = CronoHash::CronoMode;
@@ -407,21 +444,33 @@ static std::string modeToString(CronoHash::CronoMode mode) {
 namespace CronoHash {
 
     std::string hash(const char* data, std::size_t length, double binding_duration_ms, CronoMode mode, unsigned int bit_strength) {
-        // Anzahl der 64-Bit-Worte, die wir benötigen:
+        // Berechne die Anzahl der 64-Bit-Worte, die benötigt werden:
         unsigned int num_words = bit_strength / 64;
-        if (num_words == 0) num_words = 1; // Absicherung
+        if (num_words == 0)
+            num_words = 1; // Sicherheitshalber
 
-        // Array zur Speicherung – hier nutzen wir einen Vektor
+        // Array zur Speicherung – hier verwenden wir einen Vektor
         std::vector<uint64_t> words(num_words);
 
-        // Für jeden Block einen anderen Startwert, z.B. indem wir tsc plus den Index einbeziehen
+        // Zeit- und Entropiequellen:
         uint64_t tsc = CronoUtils::get_tsc();
+#ifdef _WIN32
+        // Unter Windows: Nutze die implementierte Funktion
         uint64_t nano = CronoUtils::get_current_nanotime();
+#else
+        // Unter Linux (Debian/Ubuntu): Verwende system_clock für die reale Systemzeit
+        uint64_t nano = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+#endif
+        // Steady Clock bleibt plattformunabhängig (monotonic)
         uint64_t steady = CronoUtils::get_steady_time();
+
+        // Erzeuge Umgebungsentropie
         uint64_t ram = CronoUtils::ram_fingerprint();
         uint64_t cache = CronoUtils::cache_noise();
 
-        // Initialisierung der Worte – analog zur ersten Runde im Originalcode
+        // Initialisierungsrunde: Jeder 64-Bit Block erhält einen Startwert,
+        // der aus den Zeit- und Entropiequellen sowie einer Primzahl abgeleitet wird.
         for (unsigned int i = 0; i < num_words; i++) {
             words[i] = tsc ^ (nano << ((i % 8) + 1)) ^ steady ^ ram ^ cache ^ CronoMath::PRIMES[i % CronoMath::NUM_PRIMES];
             words[i] = CronoUtils::mix_entropy(words[i], data, length);
@@ -430,7 +479,7 @@ namespace CronoHash {
             words[i] = CronoMath::mod_prime(words[i]);
         }
 
-        // Zweite Mischrunde
+        // Zweite Mischrunde: Weitere Transformationen unter Einbeziehung von 'nano'
         for (unsigned int i = 0; i < num_words; i++) {
             words[i] = CronoMath::endomorph_transform(words[i], nano);
             words[i] = CronoUtils::mix_entropy(words[i], data, length);
@@ -438,7 +487,7 @@ namespace CronoHash {
             words[i] = CronoMath::mod_prime256(words[i], i % 4);
         }
 
-        // Weitere Runden für SECURE/ENTROPIC
+        // Zusätzliche Runden für SECURE/ENTROPIC-Modus
         if (mode == CronoMode::SECURE || mode == CronoMode::ENTROPIC) {
             for (unsigned int i = 0; i < num_words; i++) {
                 words[i] = CronoMath::endomorph_transform(words[i], steady);
@@ -446,7 +495,7 @@ namespace CronoHash {
             }
         }
 
-        // ENTROPIC-Modus: zusätzlicher Memory Walk
+        // Im ENTROPIC-Modus: Zusätzlicher Memory Walk
         if (mode == CronoMode::ENTROPIC) {
             uint64_t mem_walk = CronoUtils::memory_walk();
             for (unsigned int i = 0; i < num_words; i++) {
@@ -454,7 +503,7 @@ namespace CronoHash {
             }
         }
 
-        // Adaptive Temp Binding
+        // Adaptive Zeitbindung (Temp Binding)
         if (binding_duration_ms > 0.0) {
             uint64_t binding_factor = CronoUtils::adaptive_binding_factor(binding_duration_ms);
             for (unsigned int i = 0; i < num_words; i++) {
@@ -462,25 +511,25 @@ namespace CronoHash {
             }
         }
 
-        // GhostSalt-Runde
+        // GhostSalt-Runde zur weiteren Vermischung
         uint64_t gs = CronoUtils::ghost_salt();
         for (unsigned int i = 0; i < num_words; i++) {
             words[i] ^= gs;
         }
 
-        // QUANTUM ROUND – erste Stufe via SHAKE128
+        // Quantum Runden:
+        // Erste Runde via SHAKE128
         for (unsigned int i = 0; i < num_words; i++) {
             uint64_t qm = CronoQuantum::quantum_mix(words[i], data, length);
             words[i] ^= qm;
         }
-
-        // QUANTUM ROUND – zweite Stufe via Kyber512
+        // Zweite Runde via Kyber512
         for (unsigned int i = 0; i < num_words; i++) {
             uint64_t qm2 = CronoQuantum::quantum_mix_kyber(words[i], data, length);
             words[i] ^= qm2;
         }
 
-        // Ausgabe als Hexadezimalstring – jeder 64-Bit Block wird zu 16 Hex-Zeichen
+        // Ausgabe: Jeder 64-Bit Block wird als 16 Hexadezimalzeichen dargestellt
         std::ostringstream out;
         for (unsigned int i = 0; i < num_words; i++) {
             out << std::hex << std::setw(16) << std::setfill('0') << words[i];
@@ -490,7 +539,12 @@ namespace CronoHash {
 
     std::string hash_with_metadata(const char* data, std::size_t length, double binding_duration_ms, CronoMode mode, unsigned int bit_strength) {
         uint64_t tsc = CronoUtils::get_tsc();
+#ifdef _WIN32
         uint64_t nano = CronoUtils::get_current_nanotime();
+#else
+        uint64_t nano = std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+#endif
         uint64_t binding_factor = 0;
         if (binding_duration_ms > 0.0) {
             binding_factor = CronoUtils::adaptive_binding_factor(binding_duration_ms);
@@ -725,11 +779,16 @@ namespace CronoQuantum {
 #include <comdef.h>
 #include <Wbemidl.h>
 #pragma comment(lib, "wbemuuid.lib")
+#else
+#include <x86intrin.h>  // Für __rdtsc() auf Linux/Unix
+#include <fstream>
+#include <sstream>
+#include <string>
 #endif
 
 namespace CronoUtils {
 
-    // --- Bestehende Funktionen (unverändert) ---
+    // --- Allgemeine Funktionen (plattformübergreifend) ---
 
     uint64_t get_current_nanotime() {
         auto now = std::chrono::high_resolution_clock::now();
@@ -846,7 +905,6 @@ namespace CronoUtils {
 
 #ifdef _WIN32
     // --- Windows-spezifische Hardware-Fingerprinting-Funktionen ---
-
     uint64_t get_cpu_id() {
         int cpuInfo[4] = { 0 };
         __cpuid(cpuInfo, 0);
@@ -858,16 +916,13 @@ namespace CronoUtils {
         if (FAILED(hr)) {
             return 0;
         }
-
         hr = CoInitializeSecurity(NULL, -1, NULL, NULL,
             RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
             NULL, EOAC_NONE, NULL);
-
         if (FAILED(hr)) {
             CoUninitialize();
             return 0;
         }
-
         IWbemLocator* pLoc = NULL;
         hr = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
             IID_IWbemLocator, reinterpret_cast<LPVOID*>(&pLoc));
@@ -875,7 +930,6 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         IWbemServices* pSvc = NULL;
         hr = pLoc->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
         if (FAILED(hr)) {
@@ -883,7 +937,6 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         hr = CoSetProxyBlanket(pSvc, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL,
             RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
         if (FAILED(hr)) {
@@ -892,13 +945,11 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         IEnumWbemClassObject* pEnumerator = NULL;
         hr = pSvc->ExecQuery(bstr_t("WQL"),
             bstr_t("SELECT ManufacturerID, ManufacturerVersion FROM Win32_Tpm"),
             WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
             NULL, &pEnumerator);
-
         uint64_t tpmFP = 0;
         if (SUCCEEDED(hr) && pEnumerator) {
             IWbemClassObject* pclsObj = NULL;
@@ -906,13 +957,10 @@ namespace CronoUtils {
             if (pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn) == S_OK && uReturn != 0) {
                 VARIANT vtProp;
                 hr = pclsObj->Get(L"ManufacturerID", 0, &vtProp, 0, 0);
-                if (SUCCEEDED(hr)) {
-                    if (vtProp.vt == VT_UI4) {
-                        tpmFP ^= vtProp.uintVal;
-                    }
+                if (SUCCEEDED(hr) && vtProp.vt == VT_UI4) {
+                    tpmFP ^= vtProp.uintVal;
                 }
                 VariantClear(&vtProp);
-
                 hr = pclsObj->Get(L"ManufacturerVersion", 0, &vtProp, 0, 0);
                 if (SUCCEEDED(hr) && (vtProp.vt & VT_ARRAY)) {
                     SAFEARRAY* psa = vtProp.parray;
@@ -930,7 +978,6 @@ namespace CronoUtils {
             }
             pEnumerator->Release();
         }
-
         pSvc->Release();
         pLoc->Release();
         CoUninitialize();
@@ -954,16 +1001,13 @@ namespace CronoUtils {
         if (FAILED(hr)) {
             return 0;
         }
-
         hr = CoInitializeSecurity(NULL, -1, NULL, NULL,
             RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE,
             NULL, EOAC_NONE, NULL);
-
         if (FAILED(hr)) {
             CoUninitialize();
             return 0;
         }
-
         IWbemLocator* pLoc = NULL;
         hr = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
             IID_IWbemLocator, reinterpret_cast<LPVOID*>(&pLoc));
@@ -971,7 +1015,6 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         IWbemServices* pSvc = NULL;
         hr = pLoc->ConnectServer(_bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
         if (FAILED(hr)) {
@@ -979,7 +1022,6 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         hr = CoSetProxyBlanket(pSvc, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE, NULL,
             RPC_C_AUTHN_LEVEL_CALL, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE);
         if (FAILED(hr)) {
@@ -988,20 +1030,17 @@ namespace CronoUtils {
             CoUninitialize();
             return 0;
         }
-
         IEnumWbemClassObject* pEnumerator = NULL;
         hr = pSvc->ExecQuery(bstr_t("WQL"),
             bstr_t("SELECT SerialNumber FROM Win32_BIOS"),
             WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
             NULL, &pEnumerator);
-
         uint64_t biosFP = 0;
         IWbemClassObject* pclsObj = NULL;
         ULONG uReturn = 0;
         if (pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn) == S_OK && uReturn != 0) {
             VARIANT vtProp;
-            VariantInit(&vtProp);  // Initialisiere die VARIANT vor der Verwendung
-
+            VariantInit(&vtProp);  // Initialisiere die VARIANT
             hr = pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0);
             if (SUCCEEDED(hr) && vtProp.vt == VT_BSTR && vtProp.bstrVal != NULL) {
                 unsigned long hash = 5381;
@@ -1012,27 +1051,23 @@ namespace CronoUtils {
                 }
                 biosFP = hash;
             }
-
-            VariantClear(&vtProp);  // Bereinige die VARIANT
+            VariantClear(&vtProp);
             pclsObj->Release();
         }
-
         pEnumerator->Release();
         pSvc->Release();
         pLoc->Release();
         CoUninitialize();
-
         return biosFP;
     }
 
-    // Verkettet alle Hardware-Fingerprints (ohne MAC) und mischt sie in 5 Runden mittels endomorph_transform
     std::string generate_system_chain_id() {
+        // Windows-Version: Nutzt die oben definierten Funktionen
         uint64_t cpuID = get_cpu_id();
         uint64_t tpmFP = tpm_fingerprint();
         uint64_t bootTime = os_boot_time();
         uint64_t bios = bios_serial();
         uint64_t ramFP = ram_fingerprint();
-
         uint64_t chain = cpuID ^ tpmFP ^ bootTime ^ bios ^ ramFP;
         for (int i = 0; i < 5; i++) {
             chain = CronoMath::endomorph_transform(chain, get_tsc() ^ chain);
@@ -1042,7 +1077,63 @@ namespace CronoUtils {
         return oss.str();
     }
 
-#endif  // _WIN32
+#else
+    // --- Linux-spezifische Hardware-Fingerprinting-Funktionen ---
+    // Diese Implementierungen basieren auf dem Lesen von Systemdateien.
+    uint64_t get_cpu_id() {
+        std::ifstream cpuinfo("/proc/cpuinfo");
+        std::string line;
+        uint64_t id = 0;
+        while (std::getline(cpuinfo, line)) {
+            if (line.find("Serial") != std::string::npos ||
+                line.find("model name") != std::string::npos) {
+                std::hash<std::string> hash_fn;
+                id ^= hash_fn(line);
+            }
+        }
+        return id;
+    }
+
+    uint64_t os_boot_time() {
+        std::ifstream uptime_file("/proc/uptime");
+        std::string uptime_str;
+        if (std::getline(uptime_file, uptime_str)) {
+            std::istringstream iss(uptime_str);
+            double uptime;
+            iss >> uptime;
+            // Hier wird die System-Uptime (in Sekunden) zurückgegeben.
+            // Alternativ könnte man /proc/stat oder systemd-analyze nutzen.
+            return static_cast<uint64_t>(uptime * 1e9);
+        }
+        return 0;
+    }
+
+    uint64_t bios_serial() {
+        // Versuch, die BIOS-Seriennummer aus DMI-Daten zu lesen
+        std::ifstream bios_file("/sys/class/dmi/id/product_uuid");
+        std::string bios;
+        if (std::getline(bios_file, bios)) {
+            std::hash<std::string> hash_fn;
+            return hash_fn(bios);
+        }
+        return 0;
+    }
+
+    std::string generate_system_chain_id() {
+        // Linux-Version: Nutzt alternative Methoden für Hardware-Fingerprinting
+        uint64_t cpuID = get_cpu_id();
+        uint64_t bootTime = os_boot_time();
+        uint64_t bios = bios_serial();
+        uint64_t ramFP = ram_fingerprint();
+        uint64_t chain = cpuID ^ bootTime ^ bios ^ ramFP;
+        for (int i = 0; i < 5; i++) {
+            chain = CronoMath::endomorph_transform(chain, get_tsc() ^ chain);
+        }
+        std::ostringstream oss;
+        oss << std::hex << std::setw(16) << std::setfill('0') << chain;
+        return oss.str();
+    }
+#endif
 
 } // namespace CronoUtils
 
