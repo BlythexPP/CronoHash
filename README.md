@@ -17,7 +17,7 @@ Welcome to **CronoHash v1.0** – an innovative, time-sensitive, and quantum-sec
 
 ---
 
-## Introduction 🚀
+## Introduction
 
 CronoHash v1.0 is designed to produce unique, one-time hashes by binding your data to both time and system-specific characteristics. By integrating dynamic time sources and various system fingerprints, CronoHash ensures that every hash is distinct and non-transferable—making it the ideal solution for secure communication, blockchain identity anchoring, and tamper-proof timestamps.
 
@@ -29,7 +29,7 @@ For a detailed technical overview, please refer to the [Whitepaper](./WHITEPAPER
 
 ---
 
-## Features 🌟
+## Features
 
 - **Spatio-Temporal Binding ⏱️🌐**  
   Combines dynamic time sources (e.g., TSC, Nanotime, Steady Clock) with system fingerprints (e.g., RAM, Cache, CPU ID) to generate unique, environment-bound hashes.
@@ -52,7 +52,7 @@ For a detailed technical overview, please refer to the [Whitepaper](./WHITEPAPER
 
 ---
 
-## Architecture 🏗️
+## Architecture
 
 The project is organized into clear, modular components:
 
@@ -78,7 +78,7 @@ The project is organized into clear, modular components:
 
 ---
 
-## Installation 💻
+## Installation
 
 ### Prerequisites
 - **C++17** compatible compiler (Visual Studio, GCC, Clang, etc.)
@@ -105,7 +105,7 @@ The project is organized into clear, modular components:
 
 ---
 
-## Usage 🚀
+## Usage
 
 Run the executable with the following command-line options:
 
@@ -122,7 +122,7 @@ If no parameters are provided, the program will prompt you for the necessary inp
 
 ---
 
-## Tests 🧪
+## Tests
 
 The project includes a comprehensive suite of unit tests (using Google Test) that ensure:
 
@@ -134,13 +134,13 @@ To run the tests, build the project in test mode and execute the test binary (or
 
 ---
 
-## License 📄
+## License
 
 This project is licensed under the **MIT License**. See the [LICENSE.txt](LICENSE.txt) file for details.
 
 ---
 
-## Contact 📧
+## Contact
 
 Developed by **Blythex**  
 GitHub: [https://github.com/BlythexPP](https://github.com/BlythexPP)
